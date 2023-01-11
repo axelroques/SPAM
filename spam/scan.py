@@ -1,4 +1,5 @@
 
+from collections import Counter
 from .bitmap import Bitmap
 
 
@@ -8,11 +9,21 @@ def scan(C):
 
     Returns:
         - Vertical bitmap representation
-        - Indices of the frequent items, 
-        in ascending order
     """
 
-    bitmap = 0
-    frequent_items_indices = 0
+    # Get scanpath content
+    counters = []
+    for scanpath in C:
+        counters.append(Counter(scanpath))
+    counter = sum(counters, Counter())
+    # print(counter)
 
-    return bitmap, frequent_items_indices
+    # Build bitmaps for each item
+    total_items = sum(counter.values())
+    bitmaps = [
+        Bitmap(id, label, C=C, support=count/total_items)
+        for id, (label, count)
+        in enumerate(sorted(counter.items()))
+    ]
+
+    return bitmaps
