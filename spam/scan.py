@@ -1,29 +1,24 @@
 
 from collections import Counter
-from .bitmap import Bitmap
+from .bitmap import Item
 
 
 def scan(C):
     """
     Single database scan.
 
-    Returns:
-        - Vertical bitmap representation
+    Returns a list of item bitmaps
+    Note that the items are sorted in lexicographic order.
     """
 
-    # Get scanpath content
-    counters = []
-    for scanpath in C:
-        counters.append(Counter(scanpath))
-    counter = sum(counters, Counter())
-    # print(counter)
+    # Get scanpath unique items
+    items = set().union(*[set(scanpath) for scanpath in C])
 
     # Build bitmaps for each item
-    total_items = sum(counter.values())
     bitmaps = [
-        Bitmap(id, label, C=C, support=count/total_items)
-        for id, (label, count)
-        in enumerate(sorted(counter.items()))
+        Item(id=id, sequence=[item], C=C)
+        for id, item
+        in enumerate(sorted(items))
     ]
 
     return bitmaps

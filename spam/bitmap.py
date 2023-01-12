@@ -4,26 +4,10 @@ import numpy as np
 
 class Bitmap:
 
-    def __init__(self, id, label, representation=None, C=None, support=None) -> None:
+    def __init__(self) -> None:
+        pass
 
-        self.id = id
-        self.label = label
-
-        # Bitmap representation
-        if representation:
-            self.representation = representation
-        elif C:
-            self.representation = self._compute_bitmap_representation(C, label)
-        else:
-            raise RuntimeError('Unable to produce a bitmap representation.')
-
-        # Support computation
-        if support:
-            self.support = support
-        else:
-            self.support = self._compute_support(self.representation)
-
-    def I_step(self, bitmap):
+    def I_step(self, other):
         """
         I_step process.
 
@@ -35,16 +19,19 @@ class Bitmap:
             for (key, repr1), (_, repr2)
             in zip(
                 self.representation.items(),
-                bitmap.representation.items()
+                other.representation.items()
             )
         }
 
-        return Bitmap(
-            id=None, label=self.label+bitmap.label,
+        new_sequence = self.sequence[:-1] + \
+            [self.sequence[-1] + other.sequence[0]]
+
+        return Sequence(
+            sequence=new_sequence,
             representation=extended_representation
         )
 
-    def S_step(self, bitmap):
+    def S_step(self, other):
         """
         S_step process.
 
@@ -65,7 +52,7 @@ class Bitmap:
         # Find k
         k_list = [
             first_nonzero(representation, axis=0)
-            for _, representation in self.representation.items()
+            for representation in self.representation.values()
         ]
 
         # Compute transformed representation
@@ -83,31 +70,108 @@ class Bitmap:
             for (key, repr1), (_, repr2)
             in zip(
                 transformed_representation.items(),
-                bitmap.representation.items()
+                other.representation.items()
             )
         }
 
-        return Bitmap(
-            id=None, label=self.label+bitmap.label,
+        new_sequence = self.sequence.copy()
+        new_sequence.append(other.sequence[0])
+
+        return Sequence(
+            sequence=new_sequence,
             representation=extended_representation
         )
-
-    @ staticmethod
-    def _compute_bitmap_representation(C, label):
-        """
-        Generate bitmap representation.
-        """
-        return {
-            f'S_{i}': np.where(C[i] == label, 1, 0)
-            for i in range(len(C))
-        }
 
     @ staticmethod
     def _compute_support(representation):
         """
         Compute support as the number of non zero elements in the representation.
         """
-        return sum([np.sum(bitmap) for _, bitmap in representation.items()])
+
+        total = sum([len(bitmap) for bitmap in representation.values()])
+
+        return sum([np.sum(bitmap)/total for bitmap in representation.values()])
+
+    @staticmethod
+    def _get_seq_length(seq):
+        """
+        Helper function that returns an input sequence's length.
+        """
+        return sum([len(itemset) for itemset in seq])
+
+    def __lt__(self, other):
+        """
+        Overload <= operator. 
+        Implements a partial order for sequence comparison.
+        """
+
+        # If both sequences have the same length, use the lexicographic order
+        if self._get_seq_length(self.sequence) == self._get_seq_length(other.sequence):
+            return self.sequence < other.sequence
+
+        # Otherise the longest sequence is the greatest
+        elif self._get_seq_length(self.sequence) < self._get_seq_length(other.sequence):
+            return True
+        else:
+            return False
+
+    def __gt__(self, other):
+        """
+        Overload >= operator. 
+        Implements a partial order for sequence comparison.
+        """
+
+        # If both sequences have the same length, use the lexicographic order
+        if self._get_seq_length(self.sequence) == self._get_seq_length(other.sequence):
+            return self.sequence > other.sequence
+
+        # Otherise the longest sequence is the greatest
+        elif self._get_seq_length(self.sequence) > self._get_seq_length(other.sequence):
+            return True
+        else:
+            return False
 
     def __repr__(self) -> str:
-        return f'Bitmap: id={self.id}, label={self.label}, bitmap={self.representation}'
+        """
+        Pretty print.
+        """
+        return f'Sequence: {self.sequence}'
+
+
+class Item(Bitmap):
+
+    def __init__(self, id, sequence, C) -> None:
+        super().__init__()
+
+        self.id = id
+        self.sequence = [sequence]
+
+        # Bitmap representation
+        self.representation = self._compute_bitmap_representation(C, sequence)
+
+        # Support
+        self.support = self._compute_support(self.representation)
+
+    @ staticmethod
+    def _compute_bitmap_representation(C, sequence):
+        """
+        Generate bitmap representation.
+        """
+        return {
+            f'S_{i}': np.where(C[i] == sequence[0], 1, 0)
+            for i in range(len(C))
+        }
+
+
+class Sequence(Bitmap):
+
+    def __init__(self, sequence, representation) -> None:
+        super().__init__()
+
+        self.sequence = sequence
+
+        # Bitmap representation
+        self.representation = representation
+
+        # Support
+        self.support = self._compute_support(self.representation)

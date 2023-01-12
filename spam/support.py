@@ -25,12 +25,12 @@ def S_step_process(s, item):
     Compute support in the S-step process case.
     """
 
+    # print('S-STEP')
+    # print('Initial sequence =', s.sequence)
+    # print('Items under consideration =', item.sequence)
     s_extended = s.S_step(item)
-    print('s =', s)
-    print('i =', item)
-    print('\ts_extended =', s_extended, '\n')
 
-    return s_extended, s_extended.support
+    return s_extended.support
 
 
 def I_step_process(s, item):
@@ -38,9 +38,9 @@ def I_step_process(s, item):
     Compute support in the I-step process case.
     """
 
+    # print('I-STEP')
+    # print('Initial sequence =', s.sequence)
+    # print('Items under consideration =', item.sequence)
     s_extended = s.I_step(item)
-    print('s =', s)
-    print('i =', item)
-    print('s_extended =', s_extended)
 
-    return s_extended, s_extended.support
+    return s_extended.support
